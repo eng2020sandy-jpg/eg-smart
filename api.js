@@ -1,31 +1,55 @@
-// Netlify Function: /.netlify/functions/api
-// Placeholder backend endpoints for EG SMART
+// functions/api.js
+import { MongoClient } from "mongodb";
+
+const uri = process.env.MONGODB_URI;
+const client = new MongoClient(uri);
+
 export async function handler(event, context) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
+
   let body = {};
   try { body = JSON.parse(event.body || "{}"); } catch {}
   const { action, data } = body;
 
   try {
-    if (action === "createCard") {
-      // Here you'd talk to your backend/MikroTik/OpenWRT controller
-      const code = "C-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-      return ok({ message: "Card created (stub)", code });
+    await client.connect();
+    const db = client.db("EG_SMART");
+    const cafes = db.collection("cafes");
+    const cards = db.collection("cards");
+
+    if (action === "addCafe") {
+      await cafes.insertOne(data);
+      return ok({ message: "Cafe added successfully" });
     }
-    if (action === "installCafe") {
-      // 'data.cafe' contains cafe info (name, addr, etc.)
-      // In production: call secure backend to push provisioning script/SSH command
-      return ok({ message: `Install pushed for cafe: ${data?.cafe?.name || "unknown"}` });
+
+    if (action === "getCafes") {
+      const all = await cafes.find().toArray();
+      return ok(all);
     }
-    // Add more actions as needed: createPlan, deleteCard, invoiceIssue, etc.
+
+    if (action === "addCard") {
+      await cards.insertOne(data);
+      return ok({ message: "Card created successfully" });
+    }
+
+    if (action === "getCards") {
+      const all = await cards.find().toArray();
+      return ok(all);
+    }
 
     return bad("Unknown action");
   } catch (e) {
     return bad(e.message || "Unhandled error");
+  } finally {
+    await client.close();
   }
 }
 
-function ok(obj){ return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) }; }
-function bad(msg){ return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ error: msg }) }; }
+function ok(obj) {
+  return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) };
+}
+function bad(msg) {
+  return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ error: msg }) };
+}
