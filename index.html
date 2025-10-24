@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EG SMART • Wi‑Fi Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- شاشة تسجيل الدخول -->
+    <main id="loginView" class="view active">
+      <section class="card login-card">
+        <h1 class="brand">EG SMART</h1>
+        <p class="muted">سجّل الدخول للمتابعة</p>
+        <label class="field">
+          <span>اسم المستخدم</span>
+          <input id="loginUser" type="text" placeholder="admin" autocomplete="username" />
+        </label>
+        <label class="field">
+          <span>كلمة المرور</span>
+          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" />
+        </label>
+        <button id="loginBtn" class="btn primary">دخول</button>
+        <p id="loginError" class="error hidden">بيانات الدخول غير صحيحة</p>
+      </section>
+    </main>
+
+    <!-- لوحة التحكم -->
+    <div id="dashboard" class="dashboard hidden">
+      <aside class="sidebar">
+        <div class="brand-row">
+          <span class="logo">EG</span>
+          <strong>SMART</strong>
+        </div>
+        <nav class="menu" id="menu">
+          <button class="menu-item active" data-section="home">الرئيسية</button>
+          <button class="menu-item" data-section="cafes">الكافيهات</button>
+          <button class="menu-item" data-section="cards">الكروت</button>
+          <button class="menu-item" data-section="plans">الباقات</button>
+          <button class="menu-item" data-section="reports">الإحصائيات</button>
+          <button class="menu-item" data-section="logs">السجلات</button>
+          <button class="menu-item" data-section="settings">الإعدادات</button>
+          <div class="spacer"></div>
+          <button id="logoutBtn" class="menu-item danger">تسجيل الخروج</button>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <h2 id="sectionTitle">الرئيسية</h2>
+          <div class="top-actions">
+            <input id="search" class="search" placeholder="بحث عام ..." />
+            <button id="exportBtn" class="btn">تصدير بيانات</button>
+            <label class="btn file-label">
+              استيراد
+              <input type="file" id="importInput" accept="application/json" hidden>
+            </label>
+          </div>
+        </header>
+
+        <!-- الرئيسية -->
+        <section id="home" class="section active" tabindex="0" aria-labelledby="sectionTitle">
+          <div class="grid">
+            <article class="card">
+              <h3>مرحبًا بك 👋</h3>
+              <p>إدارة كروت Wi‑Fi للمقاهي مع تحكم مركزي وربط MikroTik/OpenWRT عبر API.</p>
+            </article>
+            <article class="card">
+              <h3>ملخص سريع</h3>
+              <ul class="stats">
+                <li><span>عدد الكافيهات</span><strong id="cafesCount">0</strong></li>
+                <li><span>عدد الكروت</span><strong id="cardsCount">0</strong></li>
+                <li><span>حالة النظام</span><strong id="sysStatus">جاهز</strong></li>
+              </ul>
+            </article>
+            <article class="card">
+              <h3>إجراءات سريعة</h3>
+              <div class="actions">
+                <button class="btn primary" data-jump="cafes">إضافة كافيه</button>
+                <button class="btn" data-jump="cards">إنشاء كارت</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- الكافيهات -->
+        <section id="cafes" class="section" tabindex="0">
+          <article class="card">
+            <div class="header-row">
+              <h3>الكافيهات</h3>
+              <input id="cafesSearch" class="search" placeholder="بحث عن كافيه..." />
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>#</th><th>الاسم</th><th>العنوان</th><th>المسئول</th><th>الهاتف</th><th>تركيب</th><th>إجراءات</th></tr>
+                </thead>
+                <tbody id="cafesTable"></tbody>
+              </table>
+            </div>
+            <form id="cafeForm" class="grid-form">
+              <label class="field"><span>اسم الكافيه</span><input id="cafeName" required /></label>
+              <label class="field"><span>العنوان</span><input id="cafeAddr" /></label>
+              <label class="field"><span>المسئول</span><input id="cafeOwner" /></label>
+              <label class="field"><span>موبايل</span><input id="cafePhone" /></label>
+              <label class="field"><span>أرضي</span><input id="cafeLand" /></label>
+              <button class="btn primary" type="submit">حفظ</button>
+              <input type="hidden" id="cafeId" />
+            </form>
+          </article>
+        </section>
+
+        <!-- الكروت -->
+        <section id="cards" class="section" tabindex="0">
+          <article class="card">
+            <div class="header-row"><h3>الكروت</h3></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>الكافيه</th><th>الكود</th><th>الباقة</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                <tbody id="cardsTable"></tbody>
+              </table>
+            </div>
+            <form id="cardForm" class="grid-form">
+              <label class="field"><span>كافيه</span><input id="cardCafe" placeholder="اسم الكافيه" required /></label>
+              <label class="field"><span>الباقة</span><input id="cardPlan" placeholder="اسم الباقة" required /></label>
+              <button class="btn primary" type="submit">إنشاء كارت</button>
+            </form>
+          </article>
+        </section>
+
+        <!-- الباقات -->
+        <section id="plans" class="section" tabindex="0">
+          <article class="card">
+            <div class="header-row"><h3>الباقات</h3></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>الاسم</th><th>السعر</th><th>الحجم</th><th>السرعة</th><th>المدة</th><th>إجراءات</th></tr></thead>
+                <tbody id="plansTable"></tbody>
+              </table>
+            </div>
+            <form id="planForm" class="grid-form">
+              <label class="field"><span>الاسم</span><input id="planName" required /></label>
+              <label class="field"><span>السعر</span><input id="planPrice" type="number" min="0" step="0.01" required /></label>
+              <label class="field"><span>الحجم (MB/GB)</span><input id="planQuota" required /></label>
+              <label class="field"><span>السرعة</span><input id="planSpeed" placeholder="مثلاً 10Mbps" /></label>
+              <label class="field"><span>المدة</span><input id="planDuration" placeholder="ساعة/يوم/شهر" /></label>
+              <button class="btn primary" type="submit">حفظ</button>
+              <input type="hidden" id="planId" />
+            </form>
+          </article>
+        </section>
+
+        <!-- الإحصائيات -->
+        <section id="reports" class="section" tabindex="0">
+          <article class="card">
+            <h3>الإحصائيات</h3>
+            <canvas id="reportChart" height="140"></canvas>
+            <p class="muted">مخطط بسيط لعدد الكافيهات والكروت والباقات.</p>
+          </article>
+        </section>
+
+        <!-- السجلات -->
+        <section id="logs" class="section" tabindex="0">
+          <article class="card">
+            <h3>سجلات الأحداث</h3>
+            <div id="logsList" class="logs"></div>
+            <div class="actions">
+              <button id="clearLogs" class="btn">مسح السجلات</button>
+            </div>
+          </article>
+        </section>
+
+        <!-- الإعدادات -->
+        <section id="settings" class="section" tabindex="0">
+          <article class="card">
+            <h3>الإعدادات</h3>
+            <form id="settingsForm" class="grid-form">
+              <label class="field"><span>اسم المشروع</span><input id="projectName" value="EG SMART" /></label>
+              <label class="field"><span>الوضع</span>
+                <select id="themeMode"><option value="dark" selected>داكن</option><option value="light">فاتح</option></select>
+              </label>
+              <button class="btn primary" type="submit">حفظ</button>
+              <span id="settingsSaved" class="muted hidden">تم الحفظ ✓</span>
+            </form>
+          </article>
+        </section>
+
+      </main>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

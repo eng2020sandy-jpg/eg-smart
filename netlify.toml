@@ -1,0 +1,10 @@
+[build]
+  publish = "."
+  command = ""
+
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"
+
+[dev]
+  command = "npx serve . -l 8888"

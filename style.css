@@ -1,0 +1,82 @@
+:root{
+  --bg:#0f172a; --bg-soft:#0b1226; --card:#111c35; --muted:#8aa0c2;
+  --text:#e6ecf5; --primary:#3b82f6; --danger:#ef4444; --border:#223056;
+  --ring:#60a5fa;
+}
+:root.light{
+  --bg:#f5f7fb; --bg-soft:#fff; --card:#ffffff; --muted:#6b7280;
+  --text:#0b1226; --primary:#2563eb; --danger:#b91c1c; --border:#e5e7eb;
+  --ring:#60a5fa;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Noto Kufi Arabic',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);}
+.hidden{display:none !important}
+.muted{color:var(--muted)}
+#app{min-height:100vh}
+
+/* بطاقات عامة */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.card h3{margin:0 0 8px}
+
+/* أزرار */
+.btn{padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:transparent;color:var(--text);cursor:pointer}
+.btn:hover{outline:2px solid var(--border)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:white}
+.btn.danger{border-color:var(--danger);color:var(--danger)}
+.file-label{display:inline-block}
+
+/* حقول */
+.field{display:grid;gap:6px;margin-block:10px}
+.field input,.field select{background:var(--bg-soft);border:1px solid var(--border);border-radius:12px;padding:10px;color:var(--text);outline:none}
+.field input:focus,.field select:focus{box-shadow:0 0 0 3px var(--ring)}
+
+/* شاشة تسجيل الدخول */
+.login-card{width:min(420px,90%);margin:10vh auto;text-align:center}
+.brand{font-size:28px;letter-spacing:2px;margin:0 0 6px}
+.error{color:var(--danger)}
+
+/* التخطيط العام */
+.dashboard{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{position:sticky;top:0;align-self:start;height:100vh;background:var(--bg-soft);border-inline-end:1px solid var(--border);padding:18px;display:flex;flex-direction:column;gap:12px}
+.brand-row{display:flex;align-items:center;gap:10px;font-size:18px;margin-bottom:10px}
+.logo{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--primary);color:#fff;font-weight:bold}
+.menu{display:flex;flex-direction:column;gap:8px;height:100%}
+.menu-item{all:unset;padding:10px 12px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+.menu-item:hover{background:var(--card);border-color:var(--border)}
+.menu-item.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.spacer{flex:1}
+
+.content{padding:24px}
+.topbar{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap}
+.search{background:var(--bg-soft);border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text);min-width:220px}
+
+.section{display:none;animation:fade .18s ease}
+.section.active{display:block}
+@keyframes fade{from{opacity:.6;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* الشبكة */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+
+/* جدول */
+.table-wrap{overflow:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+thead th{position:sticky;top:0;background:var(--bg-soft)}
+
+/* نموذج شبكي */
+.grid-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:end}
+.grid-form .btn{grid-column:1 / span 1}
+
+/* السجلات */
+.logs{display:grid;gap:8px;max-height:280px;overflow:auto}
+.log-item{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;background:var(--bg-soft);border:1px solid var(--border);padding:10px;border-radius:10px}
+
+/* التقارير */
+canvas{width:100%}
+
+/* Responsive */
+@media (max-width: 900px){
+  .dashboard{grid-template-columns:1fr}
+  .sidebar{height:auto;position:relative;border-inline-end:none;border-block-end:1px solid var(--border)}
+}
