@@ -1,0 +1,10 @@
+{
+  "name": "eg-smart",
+  "version": "1.0.0",
+  "description": "EG SMART WiFi Management System",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "mongodb": "^6.3.0"
+  }
+}
