@@ -330,4 +330,92 @@
   // Renderers
   function renderAll(){ renderCafes(); renderCards(); renderPlans(); renderLogs(); drawChart(); }
   renderAll();
-})();
+})();// ✅ إعداد API URL
+const API_URL = "/api/egsmart";
+
+// دالة عامة لإرسال أوامر للـ API
+async function send(action, data = {}) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, data })
+  });
+  return res.json();
+}
+
+// تحميل الكافيهات وعرضها
+async function loadCafes() {
+  const cafes = await send("getCafes");
+  const tbody = document.getElementById("cafesTable");
+  tbody.innerHTML = "";
+
+  cafes.forEach((c, i) => {
+    const isActive = (c.status || "active") === "active";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${c.name || "-"}</td>
+      <td>${c.address || "-"}</td>
+      <td>${c.owner || "-"}</td>
+      <td>${c.phone || "-"}</td>
+      <td>
+        <button class="btn install" data-id="${c._id}">🔧 تركيب</button>
+      </td>
+      <td>
+        <button class="btn ${isActive ? "danger" : "success"} toggle" data-id="${c._id}" data-next="${isActive ? "paused" : "active"}">
+          ${isActive ? "إيقاف مؤقت" : "تشغيل"}
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // أزرار التركيب
+  document.querySelectorAll(".install").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.id;
+      const data = await send("installCafe", { id });
+      const text = `
+--- MikroTik ---
+${data.mikrotik}
+
+--- OpenWrt ---
+${data.openwrt}
+
+TOKEN: ${data.token}`;
+      const win = window.open("", "_blank");
+      win.document.write(`<pre style="white-space:pre-wrap">${text}</pre>`);
+    };
+  });
+
+  // أزرار التشغيل/الإيقاف
+  document.querySelectorAll(".toggle").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.id;
+      const next = btn.dataset.next;
+      await send("toggleCafe", { id, status: next });
+      await loadCafes();
+    };
+  });
+}
+
+// إضافة كافيه جديد
+document.getElementById("cafeForm")?.addEventListener("submit", async e => {
+  e.preventDefault();
+  const payload = {
+    name: document.getElementById("cafeName").value,
+    address: document.getElementById("cafeAddr").value,
+    owner: document.getElementById("cafeOwner").value,
+    phone: document.getElementById("cafePhone").value,
+    landline: document.getElementById("cafeLand").value
+  };
+  await send("addCafe", payload);
+  alert("✅ تم إضافة الكافيه");
+  e.target.reset();
+  loadCafes();
+});
+
+// تحميل عند فتح تبويب الكافيهات
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.getElementById("cafesTable")) loadCafes();
+});
