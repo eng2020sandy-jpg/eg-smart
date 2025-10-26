@@ -4,205 +4,64 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EG SMART • Wi-Fi Manager</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { font-family: "Cairo", sans-serif; background: #101010; color: #fff; margin: 0; }
+    .hidden { display: none; }
+    .view, .dashboard { display: none; }
+    .view.active, .dashboard.active { display: block; }
+    .card { background: #181818; padding: 20px; border-radius: 10px; max-width: 400px; margin: 50px auto; text-align: center; }
+    input { width: 100%; padding: 8px; margin-top: 5px; border: none; border-radius: 5px; }
+    .btn { margin-top: 15px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
+    .btn.primary { background: #007bff; color: white; }
+    .menu button { display: block; width: 100%; padding: 10px; background: none; border: none; color: white; text-align: right; cursor: pointer; }
+    .menu button:hover { background: #202020; }
+  </style>
 </head>
 <body>
-  <div id="app">
-    <!-- شاشة تسجيل الدخول -->
-    <main id="loginView" class="view active">
-      <section class="card login-card">
-        <h1 class="brand">EG SMART</h1>
-        <p class="muted">سجّل الدخول للمتابعة</p>
-        <label class="field">
-          <span>اسم المستخدم</span>
-          <input id="loginUser" type="text" placeholder="admin" autocomplete="username" />
-        </label>
-        <label class="field">
-          <span>كلمة المرور</span>
-          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" />
-        </label>
-        <button id="loginBtn" class="btn primary">دخول</button>
-        <p id="loginError" class="error hidden">بيانات الدخول غير صحيحة</p>
-      </section>
+  <main id="loginView" class="view active">
+    <section class="card">
+      <h1>EG SMART</h1>
+      <p>سجّل الدخول للمتابعة</p>
+      <input id="loginUser" type="text" placeholder="اسم المستخدم" />
+      <input id="loginPass" type="password" placeholder="كلمة المرور" />
+      <button id="loginBtn" class="btn primary">دخول</button>
+      <p id="loginError" style="color:red; display:none;">بيانات الدخول غير صحيحة</p>
+    </section>
+  </main>
+
+  <div id="dashboard" class="dashboard">
+    <aside class="menu">
+      <button data-section="home">🏠 الرئيسية</button>
+      <button data-section="cafes">☕ الكافيهات</button>
+      <button data-section="cards">💳 الكروت</button>
+      <button id="logoutBtn" style="color:red;">🚪 تسجيل الخروج</button>
+    </aside>
+
+    <main class="content" style="padding:20px;">
+      <h2>مرحبًا بك في لوحة EG SMART</h2>
+      <p>كل حاجة شغالة مؤقتًا بدون سيرفر 🔧</p>
     </main>
-
-    <!-- لوحة التحكم -->
-    <div id="dashboard" class="dashboard hidden">
-      <aside class="sidebar">
-        <div class="brand-row">
-          <span class="logo">EG</span>
-          <strong>SMART</strong>
-        </div>
-        <nav class="menu" id="menu">
-          <button class="menu-item active" data-section="home">الرئيسية</button>
-          <button class="menu-item" data-section="cafes">الكافيهات</button>
-          <button class="menu-item" data-section="cards">الكروت</button>
-          <button class="menu-item" data-section="plans">الباقات</button>
-          <button class="menu-item" data-section="reports">الإحصائيات</button>
-          <button class="menu-item" data-section="logs">السجلات</button>
-          <button class="menu-item" data-section="settings">الإعدادات</button>
-          <div class="spacer"></div>
-          <button id="logoutBtn" class="menu-item danger">تسجيل الخروج</button>
-        </nav>
-      </aside>
-
-      <main class="content">
-        <header class="topbar">
-          <h2 id="sectionTitle">الرئيسية</h2>
-          <div class="top-actions">
-            <input id="search" class="search" placeholder="بحث عام ..." />
-            <button id="exportBtn" class="btn">تصدير بيانات</button>
-            <label class="btn file-label">
-              استيراد
-              <input type="file" id="importInput" accept="application/json" hidden>
-            </label>
-          </div>
-        </header>
-
-        <!-- الرئيسية -->
-        <section id="home" class="section active" tabindex="0" aria-labelledby="sectionTitle">
-          <div class="grid">
-            <article class="card">
-              <h3>مرحبًا بك 👋</h3>
-              <p>إدارة كروت Wi-Fi للمقاهي مع تحكم مركزي وربط MikroTik/OpenWRT عبر API.</p>
-            </article>
-            <article class="card">
-              <h3>ملخص سريع</h3>
-              <ul class="stats">
-                <li><span>عدد الكافيهات</span><strong id="cafesCount">0</strong></li>
-                <li><span>عدد الكروت</span><strong id="cardsCount">0</strong></li>
-                <li><span>حالة النظام</span><strong id="sysStatus">جاهز</strong></li>
-              </ul>
-            </article>
-            <article class="card">
-              <h3>إجراءات سريعة</h3>
-              <div class="actions">
-                <button class="btn primary" data-jump="cafes">إضافة كافيه</button>
-                <button class="btn" data-jump="cards">إنشاء كارت</button>
-              </div>
-            </article>
-          </div>
-
-          <!-- 🔹 لوحة تحكم الكافيه -->
-          <div class="control-panel" style="margin-top:25px; text-align:center;">
-            <h3>لوحة تحكم الكافيه</h3>
-            <button id="toggleCafeBtn" 
-                    style="padding:10px 20px; background-color:#007bff; color:white; border:none; border-radius:8px; cursor:pointer;">
-              ⏸️ إيقاف الكافيه مؤقتًا
-            </button>
-            <button id="installDevicesBtn" 
-                    style="padding:10px 20px; background-color:#28a745; color:white; border:none; border-radius:8px; margin-left:10px; cursor:pointer;">
-              ⚙️ تركيب الأجهزة
-            </button>
-            <p id="statusMsg" style="margin-top:10px; color:gray;"></p>
-          </div>
-        </section>
-
-        <!-- الكافيهات -->
-        <section id="cafes" class="section" tabindex="0">
-          <article class="card">
-            <div class="header-row">
-              <h3>الكافيهات</h3>
-              <input id="cafesSearch" class="search" placeholder="بحث عن كافيه..." />
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>#</th><th>الاسم</th><th>العنوان</th><th>المسئول</th><th>الهاتف</th><th>تركيب</th><th>إجراءات</th></tr>
-                </thead>
-                <tbody id="cafesTable"></tbody>
-              </table>
-            </div>
-            <form id="cafeForm" class="grid-form">
-              <label class="field"><span>اسم الكافيه</span><input id="cafeName" required /></label>
-              <label class="field"><span>العنوان</span><input id="cafeAddr" /></label>
-              <label class="field"><span>المسئول</span><input id="cafeOwner" /></label>
-              <label class="field"><span>موبايل</span><input id="cafePhone" /></label>
-              <label class="field"><span>أرضي</span><input id="cafeLand" /></label>
-              <button class="btn primary" type="submit">حفظ</button>
-              <input type="hidden" id="cafeId" />
-            </form>
-          </article>
-        </section>
-
-        <!-- الكروت -->
-        <section id="cards" class="section" tabindex="0">
-          <article class="card">
-            <div class="header-row"><h3>الكروت</h3></div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>الكافيه</th><th>الكود</th><th>الباقة</th><th>الحالة</th><th>إجراءات</th></tr></thead>
-                <tbody id="cardsTable"></tbody>
-              </table>
-            </div>
-            <form id="cardForm" class="grid-form">
-              <label class="field"><span>كافيه</span><input id="cardCafe" placeholder="اسم الكافيه" required /></label>
-              <label class="field"><span>الباقة</span><input id="cardPlan" placeholder="اسم الباقة" required /></label>
-              <button class="btn primary" type="submit">إنشاء كارت</button>
-            </form>
-          </article>
-        </section>
-
-        <!-- الإعدادات -->
-        <section id="settings" class="section" tabindex="0">
-          <article class="card">
-            <h3>الإعدادات</h3>
-            <form id="settingsForm" class="grid-form">
-              <label class="field"><span>اسم المشروع</span><input id="projectName" value="EG SMART" /></label>
-              <label class="field"><span>الوضع</span>
-                <select id="themeMode"><option value="dark" selected>داكن</option><option value="light">فاتح</option></select>
-              </label>
-              <button class="btn primary" type="submit">حفظ</button>
-              <span id="settingsSaved" class="muted hidden">تم الحفظ ✓</span>
-            </form>
-          </article>
-        </section>
-      </main>
-    </div>
   </div>
 
-  <script src="script.js"></script>
-
-  <!-- 🔹 سكريبت الأزرار الجديدة -->
   <script>
-  const API_URL = "/.netlify/functions/api"; // لو انت على Vercel خليه نفس المسار ده
+    // تسجيل الدخول المؤقت
+    const loginBtn = document.getElementById("loginBtn");
+    loginBtn.addEventListener("click", () => {
+      const user = document.getElementById("loginUser").value.trim();
+      const pass = document.getElementById("loginPass").value.trim();
+      if (user === "admin" && pass === "123") {
+        document.getElementById("loginView").classList.remove("active");
+        document.getElementById("dashboard").classList.add("active");
+      } else {
+        document.getElementById("loginError").style.display = "block";
+      }
+    });
 
-  let cafeStatus = true;
-
-  document.getElementById("toggleCafeBtn").addEventListener("click", async () => {
-    cafeStatus = !cafeStatus;
-    const btn = document.getElementById("toggleCafeBtn");
-    const msg = document.getElementById("statusMsg");
-
-    btn.innerText = cafeStatus ? "⏸️ إيقاف الكافيه مؤقتًا" : "▶️ تشغيل الكافيه";
-    btn.style.backgroundColor = cafeStatus ? "#007bff" : "#dc3545";
-    msg.innerText = cafeStatus ? "✅ الكافيه يعمل الآن" : "⛔ تم إيقاف الكافيه مؤقتًا";
-
-    try {
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "updateCafeStatus", data: { active: cafeStatus } })
-      });
-    } catch (err) {
-      msg.innerText = "⚠️ خطأ في الاتصال بالخادم!";
-    }
-  });
-
-  document.getElementById("installDevicesBtn").addEventListener("click", async () => {
-    const msg = document.getElementById("statusMsg");
-    msg.innerText = "⏳ جاري تثبيت الأجهزة...";
-    try {
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "installDevices", data: {} })
-      });
-      msg.innerText = "✅ تم تركيب الأجهزة بنجاح!";
-    } catch (err) {
-      msg.innerText = "⚠️ حدث خطأ أثناء تركيب الأجهزة!";
-    }
-  });
+    // تسجيل الخروج
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      document.getElementById("dashboard").classList.remove("active");
+      document.getElementById("loginView").classList.add("active");
+    });
   </script>
 </body>
 </html>
