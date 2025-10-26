@@ -186,6 +186,25 @@ document.getElementById("cardForm")?.addEventListener("submit", async e => {
   alert("✅ تم إنشاء الكروت بنجاح");
   loadCards();
 });
+// ==================== تسجيل الدخول البسيط ====================
+document.getElementById("loginBtn")?.addEventListener("click", () => {
+  const user = document.getElementById("loginUser").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+  
+  // بيانات الدخول الافتراضية
+  if (user === "admin" && pass === "123") {
+    document.getElementById("loginView").classList.remove("active");
+    document.getElementById("dashboard").classList.remove("hidden");
+  } else {
+    document.getElementById("loginError").classList.remove("hidden");
+  }
+});
+
+// زر تسجيل الخروج
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  document.getElementById("dashboard").classList.add("hidden");
+  document.getElementById("loginView").classList.add("active");
+});
 
 // ==================== 🚀 تشغيل تلقائي عند الفتح ====================
 document.addEventListener("DOMContentLoaded", () => {
