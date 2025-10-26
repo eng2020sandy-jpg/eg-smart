@@ -1,24 +1,30 @@
-// ✅ إعداد API URL
+// ✅ إعداد عنوان الـ API
 const API_URL = "/api/egsmart";
 
-// دالة عامة لإرسال أوامر للـ API
+// 🧩 دالة عامة لإرسال الأوامر إلى السيرفر
 async function send(action, data = {}) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, data })
-  });
-  return res.json();
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, data })
+    });
+    return await res.json();
+  } catch (e) {
+    console.error("❌ خطأ في الاتصال بالسيرفر:", e);
+    alert("حدث خطأ أثناء الاتصال بالسيرفر!");
+    return {};
+  }
 }
 
-// ==================== الكافيهات ====================
+// ==================== 🏪 الكافيهات ====================
 async function loadCafes() {
   const cafes = await send("getCafes");
   const tbody = document.getElementById("cafesTable");
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  cafes.forEach((c, i) => {
+  (cafes || []).forEach((c, i) => {
     const isActive = (c.status || "active") === "active";
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -27,7 +33,9 @@ async function loadCafes() {
       <td>${c.address || "-"}</td>
       <td>${c.owner || "-"}</td>
       <td>${c.phone || "-"}</td>
-      <td><button class="btn install" data-id="${c._id}">🔧 تركيب</button></td>
+      <td>
+        <button class="btn install" data-id="${c._id}">🔧 تركيب</button>
+      </td>
       <td>
         <button class="btn ${isActive ? "danger" : "success"} toggle" data-id="${c._id}" data-next="${isActive ? "paused" : "active"}">
           ${isActive ? "إيقاف مؤقت" : "تشغيل"}
@@ -37,12 +45,13 @@ async function loadCafes() {
     tbody.appendChild(tr);
   });
 
-  // زر التركيب
+  // 🧠 زر التركيب
   document.querySelectorAll(".install").forEach(btn => {
     btn.onclick = async () => {
       const id = btn.dataset.id;
       const data = await send("installCafe", { id });
-      const text = `
+      if (data?.mikrotik) {
+        const text = `
 --- MikroTik ---
 ${data.mikrotik}
 
@@ -50,12 +59,15 @@ ${data.mikrotik}
 ${data.openwrt}
 
 TOKEN: ${data.token}`;
-      const win = window.open("", "_blank");
-      win.document.write(`<pre style="white-space:pre-wrap">${text}</pre>`);
+        const win = window.open("", "_blank");
+        win.document.write(`<pre style="white-space:pre-wrap">${text}</pre>`);
+      } else {
+        alert("⚠️ لم يتم توليد سكربت التركيب");
+      }
     };
   });
 
-  // زر التشغيل/الإيقاف
+  // 🔘 زر التشغيل/الإيقاف
   document.querySelectorAll(".toggle").forEach(btn => {
     btn.onclick = async () => {
       const id = btn.dataset.id;
@@ -66,6 +78,7 @@ TOKEN: ${data.token}`;
   });
 }
 
+// ➕ إضافة كافيه جديد
 document.getElementById("cafeForm")?.addEventListener("submit", async e => {
   e.preventDefault();
   const payload = {
@@ -76,19 +89,19 @@ document.getElementById("cafeForm")?.addEventListener("submit", async e => {
     landline: document.getElementById("cafeLand").value
   };
   await send("addCafe", payload);
-  alert("✅ تم إضافة الكافيه");
+  alert("✅ تم إضافة الكافيه بنجاح");
   e.target.reset();
   loadCafes();
 });
 
-// ==================== الباقات ====================
+// ==================== 💳 الباقات ====================
 async function loadPlans() {
   const plans = await send("getPlans");
   const tbody = document.getElementById("plansTable");
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  plans.forEach((p, i) => {
+  (plans || []).forEach((p, i) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${i + 1}</td>
@@ -101,11 +114,11 @@ async function loadPlans() {
     tbody.appendChild(tr);
   });
 
-  // تحدّث قائمة الباقات في نموذج الكروت
+  // تحديث قائمة الباقات في نموذج الكروت
   const sel = document.getElementById("cardPlan");
   if (sel) {
     sel.innerHTML = "";
-    plans.forEach(p => {
+    (plans || []).forEach(p => {
       const opt = document.createElement("option");
       opt.value = p._id;
       opt.textContent = p.name;
@@ -114,6 +127,7 @@ async function loadPlans() {
   }
 }
 
+// ➕ حفظ / تعديل باقة
 document.getElementById("planForm")?.addEventListener("submit", async e => {
   e.preventDefault();
   const payload = {
@@ -127,17 +141,18 @@ document.getElementById("planForm")?.addEventListener("submit", async e => {
     durationType: document.getElementById("planDurType")?.value || "days",
   };
   await send("upsertPlan", payload);
-  alert("✅ تم حفظ الباقة");
+  alert("✅ تم حفظ الباقة بنجاح");
   loadPlans();
 });
 
-// ==================== الكروت ====================
+// ==================== 🧾 الكروت ====================
 async function loadCards() {
   const cards = await send("getCards");
   const tbody = document.getElementById("cardsTable");
   if (!tbody) return;
   tbody.innerHTML = "";
-  cards.forEach((k, i) => {
+
+  (cards || []).forEach((k, i) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${i + 1}</td>
@@ -150,15 +165,15 @@ async function loadCards() {
   });
 }
 
+// ➕ إنشاء مجموعة كروت دفعة واحدة
 document.getElementById("cardForm")?.addEventListener("submit", async e => {
   e.preventDefault();
-
   const cafeName = document.getElementById("cardCafe").value.trim();
-  if (!cafeName) return alert("❗️اكتب اسم الكافيه أولاً");
+  if (!cafeName) return alert("⚠️ اكتب اسم الكافيه أولًا");
 
   const cafes = await send("getCafes");
   const cafe = cafes.find(c => (c.name || "").trim() === cafeName);
-  if (!cafe) return alert("الكافيه غير موجود بالاسم المكتوب");
+  if (!cafe) return alert("❌ الكافيه غير موجود بالاسم المكتوب");
 
   const payload = {
     cafeId: cafe._id,
@@ -168,11 +183,11 @@ document.getElementById("cardForm")?.addEventListener("submit", async e => {
   };
 
   await send("createCardsBatch", payload);
-  alert("✅ تم إنشاء الكروت");
+  alert("✅ تم إنشاء الكروت بنجاح");
   loadCards();
 });
 
-// ==================== تشغيل تلقائي ====================
+// ==================== 🚀 تشغيل تلقائي عند الفتح ====================
 document.addEventListener("DOMContentLoaded", () => {
   loadCafes();
   loadPlans();
