@@ -1,7 +1,7 @@
-// ✅ إعداد عنوان الـ API
+// ===== إعداد عنوان الـ API (Vercel Functions) =====
 const API_URL = "/api/egsmart";
 
-// 🧩 دالة عامة لإرسال الأوامر إلى السيرفر
+// إرسال أوامر للـ API مع حماية من الأخطاء
 async function send(action, data = {}) {
   try {
     const res = await fetch(API_URL, {
@@ -11,20 +11,41 @@ async function send(action, data = {}) {
     });
     return await res.json();
   } catch (e) {
-    console.error("❌ خطأ في الاتصال بالسيرفر:", e);
-    alert("حدث خطأ أثناء الاتصال بالسيرفر!");
-    return {};
+    console.error("API error:", e);
+    alert("⚠️ خطأ في الاتصال بالسيرفر");
+    return null;
   }
 }
 
-// ==================== 🏪 الكافيهات ====================
+// ===== تسجيل الدخول البسيط (بدون DB) =====
+document.getElementById("loginBtn")?.addEventListener("click", () => {
+  const user = document.getElementById("loginUser")?.value?.trim() || "";
+  const pass = document.getElementById("loginPass")?.value?.trim() || "";
+  if (user === "admin" && pass === "123") {
+    document.getElementById("loginView").classList.remove("active");
+    document.getElementById("dashboard").classList.add("active");
+    // أول ما ندخل، نحمل الكافيهات
+    loadCafes();
+  } else {
+    document.getElementById("loginError").style.display = "block";
+  }
+});
+
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  document.getElementById("dashboard").classList.remove("active");
+  document.getElementById("loginView").classList.add("active");
+});
+
+// ===== الكافيهات =====
 async function loadCafes() {
-  const cafes = await send("getCafes");
   const tbody = document.getElementById("cafesTable");
   if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7">⏳ جاري التحميل...</td></tr>`;
+
+  const cafes = await send("getCafes") || [];
   tbody.innerHTML = "";
 
-  (cafes || []).forEach((c, i) => {
+  cafes.forEach((c, i) => {
     const isActive = (c.status || "active") === "active";
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -33,11 +54,10 @@ async function loadCafes() {
       <td>${c.address || "-"}</td>
       <td>${c.owner || "-"}</td>
       <td>${c.phone || "-"}</td>
+      <td><button class="btn install" data-id="${c._id}">🔧 تركيب</button></td>
       <td>
-        <button class="btn install" data-id="${c._id}">🔧 تركيب</button>
-      </td>
-      <td>
-        <button class="btn ${isActive ? "danger" : "success"} toggle" data-id="${c._id}" data-next="${isActive ? "paused" : "active"}">
+        <button class="btn ${isActive ? "danger" : "success"} toggle"
+                data-id="${c._id}" data-next="${isActive ? "paused" : "active"}">
           ${isActive ? "إيقاف مؤقت" : "تشغيل"}
         </button>
       </td>
@@ -45,170 +65,51 @@ async function loadCafes() {
     tbody.appendChild(tr);
   });
 
-  // 🧠 زر التركيب
-  document.querySelectorAll(".install").forEach(btn => {
-    btn.onclick = async () => {
+  // تفويض أحداث الجدول للأزرار
+  tbody.onclick = async (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+
+    // تركيب
+    if (btn.classList.contains("install")) {
       const id = btn.dataset.id;
       const data = await send("installCafe", { id });
-      if (data?.mikrotik) {
-        const text = `
---- MikroTik ---
-${data.mikrotik}
+      if (!data) return;
+      const text = `--- MikroTik ---\n${data.mikrotik}\n\n--- OpenWrt ---\n${data.openwrt}\n\nTOKEN: ${data.token}`;
+      const w = window.open("", "_blank");
+      w.document.write(`<pre style="white-space:pre-wrap">${text}</pre>`);
+      return;
+    }
 
---- OpenWrt ---
-${data.openwrt}
-
-TOKEN: ${data.token}`;
-        const win = window.open("", "_blank");
-        win.document.write(`<pre style="white-space:pre-wrap">${text}</pre>`);
-      } else {
-        alert("⚠️ لم يتم توليد سكربت التركيب");
-      }
-    };
-  });
-
-  // 🔘 زر التشغيل/الإيقاف
-  document.querySelectorAll(".toggle").forEach(btn => {
-    btn.onclick = async () => {
+    // تشغيل/إيقاف
+    if (btn.classList.contains("toggle")) {
       const id = btn.dataset.id;
       const next = btn.dataset.next;
       await send("toggleCafe", { id, status: next });
       await loadCafes();
-    };
-  });
+    }
+  };
 }
 
-// ➕ إضافة كافيه جديد
-document.getElementById("cafeForm")?.addEventListener("submit", async e => {
+// حفظ كافيه جديد
+document.getElementById("cafeForm")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const payload = {
     name: document.getElementById("cafeName").value,
     address: document.getElementById("cafeAddr").value,
     owner: document.getElementById("cafeOwner").value,
     phone: document.getElementById("cafePhone").value,
-    landline: document.getElementById("cafeLand").value
+    landline: document.getElementById("cafeLand").value,
   };
-  await send("addCafe", payload);
-  alert("✅ تم إضافة الكافيه بنجاح");
-  e.target.reset();
-  loadCafes();
-});
-
-// ==================== 💳 الباقات ====================
-async function loadPlans() {
-  const plans = await send("getPlans");
-  const tbody = document.getElementById("plansTable");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  (plans || []).forEach((p, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${p.name}</td>
-      <td>${p.price} ج.م</td>
-      <td>${p.quota} ${p.quotaUnit}</td>
-      <td>${p.downloadKbps}/${p.uploadKbps}</td>
-      <td>${p.duration} ${p.durationType}</td>
-      <td>—</td>`;
-    tbody.appendChild(tr);
-  });
-
-  // تحديث قائمة الباقات في نموذج الكروت
-  const sel = document.getElementById("cardPlan");
-  if (sel) {
-    sel.innerHTML = "";
-    (plans || []).forEach(p => {
-      const opt = document.createElement("option");
-      opt.value = p._id;
-      opt.textContent = p.name;
-      sel.appendChild(opt);
-    });
-  }
-}
-
-// ➕ حفظ / تعديل باقة
-document.getElementById("planForm")?.addEventListener("submit", async e => {
-  e.preventDefault();
-  const payload = {
-    name: document.getElementById("planName").value,
-    price: document.getElementById("planPrice").value,
-    quota: document.getElementById("planQuota").value,
-    quotaUnit: document.getElementById("planQuotaUnit")?.value || "GB",
-    uploadKbps: document.getElementById("planUp")?.value || 0,
-    downloadKbps: document.getElementById("planDown")?.value || 0,
-    duration: document.getElementById("planDuration").value,
-    durationType: document.getElementById("planDurType")?.value || "days",
-  };
-  await send("upsertPlan", payload);
-  alert("✅ تم حفظ الباقة بنجاح");
-  loadPlans();
-});
-
-// ==================== 🧾 الكروت ====================
-async function loadCards() {
-  const cards = await send("getCards");
-  const tbody = document.getElementById("cardsTable");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  (cards || []).forEach((k, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${k.cafeId || "-"}</td>
-      <td>${k.code}</td>
-      <td>${k.planId || "-"}</td>
-      <td>${k.status}</td>
-      <td>—</td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-// ➕ إنشاء مجموعة كروت دفعة واحدة
-document.getElementById("cardForm")?.addEventListener("submit", async e => {
-  e.preventDefault();
-  const cafeName = document.getElementById("cardCafe").value.trim();
-  if (!cafeName) return alert("⚠️ اكتب اسم الكافيه أولًا");
-
-  const cafes = await send("getCafes");
-  const cafe = cafes.find(c => (c.name || "").trim() === cafeName);
-  if (!cafe) return alert("❌ الكافيه غير موجود بالاسم المكتوب");
-
-  const payload = {
-    cafeId: cafe._id,
-    planId: document.getElementById("cardPlan").value,
-    count: Number(document.getElementById("cardCount")?.value || 1),
-    codeLength: Number(document.getElementById("cardCodeLen")?.value || 8),
-  };
-
-  await send("createCardsBatch", payload);
-  alert("✅ تم إنشاء الكروت بنجاح");
-  loadCards();
-});
-// ==================== تسجيل الدخول البسيط ====================
-document.getElementById("loginBtn")?.addEventListener("click", () => {
-  const user = document.getElementById("loginUser").value.trim();
-  const pass = document.getElementById("loginPass").value.trim();
-  
-  // بيانات الدخول الافتراضية
-  if (user === "admin" && pass === "123") {
-    document.getElementById("loginView").classList.remove("active");
-    document.getElementById("dashboard").classList.remove("hidden");
+  const r = await send("addCafe", payload);
+  if (r?.insertedId) {
+    alert("✅ تم إضافة الكافيه بنجاح");
+    e.target.reset();
+    loadCafes();
   } else {
-    document.getElementById("loginError").classList.remove("hidden");
+    alert("⚠️ لم يتم الحفظ. تأكد من البيانات.");
   }
 });
 
-// زر تسجيل الخروج
-document.getElementById("logoutBtn")?.addEventListener("click", () => {
-  document.getElementById("dashboard").classList.add("hidden");
-  document.getElementById("loginView").classList.add("active");
-});
-
-// ==================== 🚀 تشغيل تلقائي عند الفتح ====================
-document.addEventListener("DOMContentLoaded", () => {
-  loadCafes();
-  loadPlans();
-  loadCards();
-});
+// لوج بسيط للتأكد من تحميل السكربت
+console.log("EG SMART: script.js is loaded");
