@@ -1,88 +1,35 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EG SMART • Wi-Fi Manager</title>
-  <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Cairo", sans-serif; background:#0f1115; color:#e6e6e6; margin:0 }
-    .hidden { display:none }
-    .view, .dashboard { display:none }
-    .view.active, .dashboard.active { display:block }
-    .wrap { max-width:1100px; margin:0 auto; padding:20px }
-    .card { background:#161a21; border:1px solid #232a35; border-radius:14px; padding:18px; }
-    h1,h2,h3 { margin:0 0 10px }
-    input,select,button { font-family: inherit }
-    input,select { width:100%; padding:10px; border-radius:10px; border:1px solid #2a3240; background:#0f141c; color:#fff }
-    .btn { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; background:#2a6df1; color:#fff }
-    .btn.danger { background:#e55353 }
-    .btn.success { background:#28a745 }
-    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px }
-    table { width:100%; border-collapse: collapse; }
-    th,td { border-bottom:1px solid #232a35; padding:10px; text-align:right }
-    .login { max-width:420px; margin:80px auto }
-    .row { display:grid; grid-template-columns:1fr 1fr; gap:10px }
-    @media (max-width:800px){ .grid{ grid-template-columns:1fr } .row{ grid-template-columns:1fr } }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تسجيل الدخول - EG SMART</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- شاشة الدخول -->
-  <main id="loginView" class="view active">
-    <section class="card login">
-      <h1>EG SMART</h1>
-      <p>سجّل الدخول للمتابعة</p>
-      <label>اسم المستخدم
-        <input id="loginUser" type="text" placeholder="admin" />
-      </label>
-      <label>كلمة المرور
-        <input id="loginPass" type="password" placeholder="123" />
-      </label>
-      <button id="loginBtn" class="btn" style="width:100%; margin-top:10px">دخول</button>
-      <p id="loginError" style="display:none; color:#ff7b7b; margin-top:8px">بيانات الدخول غير صحيحة</p>
-    </section>
-  </main>
+  <div class="login-container">
+    <div class="login-card animate">
+      <h2>تسجيل الدخول</h2>
+      <p class="subtitle">مرحباً بك في لوحة تحكم EG SMART</p>
 
-  <!-- اللوحة -->
-  <div id="dashboard" class="dashboard">
-    <div class="wrap">
-      <header style="display:flex; align-items:center; gap:10px; justify-content:space-between; margin-bottom:16px">
-        <h2>لوحة التحكم</h2>
-        <button id="logoutBtn" class="btn danger">تسجيل الخروج</button>
-      </header>
+      <form id="loginForm">
+        <div class="input-group">
+          <label for="loginUser">اسم المستخدم</label>
+          <input type="text" id="loginUser" placeholder="أدخل اسم المستخدم" required />
+        </div>
 
-      <section class="grid">
-        <!-- كارت إضافة كافيه -->
-        <article class="card">
-          <h3>إضافة كافيه</h3>
-          <form id="cafeForm" style="margin-top:10px">
-            <label>اسم الكافيه<input id="cafeName" required /></label>
-            <div class="row">
-              <label>العنوان<input id="cafeAddr" /></label>
-              <label>المسئول<input id="cafeOwner" /></label>
-            </div>
-            <div class="row">
-              <label>موبايل<input id="cafePhone" /></label>
-              <label>أرضي<input id="cafeLand" /></label>
-            </div>
-            <button class="btn" type="submit" style="margin-top:10px">حفظ</button>
-          </form>
-        </article>
+        <div class="input-group">
+          <label for="loginPass">كلمة المرور</label>
+          <input type="password" id="loginPass" placeholder="••••••" required />
+        </div>
 
-        <!-- جدول الكافيهات -->
-        <article class="card">
-          <h3>الكافيهات</h3>
-          <div style="overflow:auto; margin-top:10px">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th><th>الاسم</th><th>العنوان</th><th>المسئول</th><th>الهاتف</th><th>تركيب</th><th>حالة</th>
-                </tr>
-              </thead>
-              <tbody id="cafesTable"></tbody>
-            </table>
-          </div>
-        </article>
-      </section>
+        <div id="loginError" class="error-msg"></div>
+
+        <button type="submit" id="loginBtn">
+          <span>دخول</span>
+          <div class="spinner" id="spinner"></div>
+        </button>
+      </form>
     </div>
   </div>
 
