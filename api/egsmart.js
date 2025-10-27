@@ -3,31 +3,37 @@ const bcrypt = require("bcryptjs");
 const { z } = require("zod");
 const { connect, ObjectId } = require("./_db");
 
-// استبدال nanoid بوظيفة توليد أكواد داخلية (لتجنب مشكلة ESM)
-function customAlphabet(chars, length) {
-  return () =>
-    Array.from({ length }, () =>
-      chars[Math.floor(Math.random() * chars.length)]
-    ).join("");
-}
-
-// إعدادات عامة
 const JWT_SECRET = process.env.JWT_SECRET || "change_this_secret";
 const ADMIN_USER = process.env.ADMIN_USER || "admin";
 const ADMIN_PASS = process.env.ADMIN_PASS || "123";
 
-const nano = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 10);
+// ✅ حل مشكلة nanoid (ESM)
+let customAlphabet;
+async function getNanoAlphabet() {
+  if (!customAlphabet) {
+    const nanoid = await import("nanoid");
+    customAlphabet = nanoid.customAlphabet;
+  }
+  return customAlphabet;
+}
 
+async function generateNanoId(length = 10) {
+  const alphabetFn = await getNanoAlphabet();
+  const nano = alphabetFn("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", length);
+  return nano();
+}
+
+// ✅ رد سريع
 function ok(res, payload) {
   res.setHeader("Content-Type", "application/json");
   return res.status(200).end(JSON.stringify(payload));
 }
-
 function bad(res, code, payload) {
   res.setHeader("Content-Type", "application/json");
   return res.status(code).end(JSON.stringify(payload));
 }
 
+// ✅ إنشاء المستخدم الإداري لو مش موجود
 async function ensureAdminUser(db) {
   const users = db.collection("users");
   const admin = await users.findOne({ user: ADMIN_USER });
@@ -42,6 +48,7 @@ async function ensureAdminUser(db) {
   }
 }
 
+// ✅ دالة استخراج التوكن
 function getAuth(req) {
   const h = req.headers.authorization || "";
   const m = h.match(/^Bearer (.+)$/);
@@ -53,6 +60,7 @@ function getAuth(req) {
   }
 }
 
+// ✅ الوظائف الرئيسية
 module.exports = async (req, res) => {
   if (req.method !== "POST")
     return bad(res, 405, { error: "method_not_allowed" });
@@ -61,7 +69,7 @@ module.exports = async (req, res) => {
   const { db } = await connect();
   await ensureAdminUser(db);
 
-  // ==== AUTH ====
+  // ==== تسجيل الدخول ====
   if (action === "login") {
     const { user, pass } = data || {};
     if (!user || !pass) return ok(res, { error: "invalid" });
@@ -77,13 +85,13 @@ module.exports = async (req, res) => {
     return ok(res, { token });
   }
 
-  // All other actions require auth
+  // باقي الطلبات تتطلب توكن
   const auth = getAuth(req);
   if (!auth) return bad(res, 401, { error: "unauthorized" });
 
   if (action === "me") return ok(res, { user: auth.user, role: auth.role });
 
-  // ==== CAFES ====
+  // ==== الكافيهات ====
   if (action === "getCafes") {
     const rows = await db
       .collection("cafes")
@@ -118,38 +126,35 @@ module.exports = async (req, res) => {
 
   if (action === "installCafe") {
     const { id } = data || {};
-    const cafe = await db
-      .collection("cafes")
-      .findOne({ _id: new ObjectId(id) });
+    const cafe = await db.collection("cafes").findOne({ _id: new ObjectId(id) });
     if (!cafe) return ok(res, { error: "not_found" });
 
-    // Generate a per-cafe secret token (use/update existing one)
+    // إنشاء توكن خاص بالكافيه
     let token = cafe.installToken;
     if (!token) {
-      token = nano();
+      token = await generateNanoId(24);
       await db
         .collection("cafes")
         .updateOne({ _id: cafe._id }, { $set: { installToken: token } });
     }
 
-    // Return sample scripts (MikroTik/OpenWrt) – adjust to your infra
-    const mikrotik = `# Configure MikroTik hotspot client pointing to your controller
+    const mikrotik = `# MikroTik config
 /ip hotspot profile set [ find default=yes ] login-by=http-chap name=egsmart
 /tool fetch url="https://your-domain/api/login?token=${token}" keep-result=no`;
 
-    const openwrt = `# OpenWrt captive portal hook (example)
+    const openwrt = `# OpenWrt captive portal setup
 uci set firewall.egsmart=rule
 uci set firewall.egsmart.src='lan'
 uci set firewall.egsmart.dest_port='80'
 uci set firewall.egsmart.proto='tcp'
 uci commit firewall
 /etc/init.d/firewall restart
-# Controller URL token=${token}`;
+# Controller token=${token}`;
 
     return ok(res, { mikrotik, openwrt, token });
   }
 
-  // ==== PLANS ====
+  // ==== الباقات ====
   if (action === "getPlans") {
     const rows = await db
       .collection("plans")
@@ -185,7 +190,7 @@ uci commit firewall
     return ok(res, { ok: true });
   }
 
-  // ==== CARDS ====
+  // ==== الكروت ====
   if (action === "generateCards") {
     const Schema = z.object({
       cafeId: z.string().min(1),
@@ -196,9 +201,11 @@ uci commit firewall
     });
     const parsed = Schema.safeParse(data || {});
     if (!parsed.success) return ok(res, { error: "invalid" });
+
     const { cafeId, count, length, prefix, planId } = parsed.data;
     const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    const gen = customAlphabet(alphabet, length);
+    const alphabetFn = await getNanoAlphabet();
+    const gen = alphabetFn(alphabet, length);
     const now = new Date();
     const docs = [];
 
@@ -208,10 +215,7 @@ uci commit firewall
     }
 
     if (docs.length) await db.collection("cards").insertMany(docs);
-    return ok(res, {
-      inserted: docs.map((d) => d.code),
-      preview: docs.slice(0, 20),
-    });
+    return ok(res, { inserted: docs.map((d) => d.code), preview: docs.slice(0, 20) });
   }
 
   if (action === "searchCards") {
@@ -228,7 +232,7 @@ uci commit firewall
     return ok(res, rows);
   }
 
-  // ==== DESIGNS ====
+  // ==== التصاميم ====
   if (action === "addDesign") {
     const Schema = z.object({
       cafeId: z.string().min(1),
@@ -261,9 +265,7 @@ uci commit firewall
 
   if (action === "getDesign") {
     const { id } = data || {};
-    const d = await db.collection("designs").findOne({
-      _id: new ObjectId(id),
-    });
+    const d = await db.collection("designs").findOne({ _id: new ObjectId(id) });
     return ok(res, d || null);
   }
 
