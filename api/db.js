@@ -11,7 +11,7 @@ async function connect() {
     const client = new MongoClient(uri);
     cached.promise = client.connect().then((client) => ({
       client,
-      db: client.db("egsmart")
+      db: client.db(process.env.MONGODB_DB || "egsmart"),
     }));
   }
   cached.conn = await cached.promise;
